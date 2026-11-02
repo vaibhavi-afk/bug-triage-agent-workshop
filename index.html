@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IT Bug Triage Co-Build</title>
+<meta name="description" content="Follow-along guide for building a multi-agent IT bug triage system in Lyzr Agent Studio.">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --lyzr-orange:#FE4B1E; --lyzr-offwhite:#FAFAF9; --lyzr-black:#1F2022; --lyzr-stone:#A8A298;
+  --grey-100:#F1F0EE; --grey-200:#E3E1DE; --grey-300:#CFCCC7; --grey-600:#8A857C; --grey-700:#6B675F; --grey-800:#4A4744;
+  --font-sans:"Aeonik","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{margin:0;background:var(--lyzr-offwhite);color:var(--lyzr-black);font-family:var(--font-sans);font-weight:400;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+strong,b,h1,h2,h3,th{font-weight:400}
+strong{color:var(--lyzr-black)}
+a{color:var(--lyzr-black);text-decoration:underline;text-decoration-color:var(--grey-300);text-underline-offset:3px}
+a:hover{text-decoration-color:var(--lyzr-black)}
+.eyebrow{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;font-size:12px;color:var(--grey-700);margin:0 0 8px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1240px;margin:0 auto}
+aside{position:sticky;top:0;height:100vh;overflow:auto;padding:40px 24px;border-right:1px solid var(--grey-200)}
+aside .eyebrow{margin-bottom:16px}
+aside ol{list-style:none;margin:0;padding:0}
+aside li a{display:flex;gap:12px;padding:7px 0;text-decoration:none;color:var(--grey-700);font-size:15px;line-height:1.35}
+aside li a:hover,aside li a.active{color:var(--lyzr-black)}
+aside .num{font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;padding-top:3px;color:var(--grey-600)}
+main{padding:56px 48px 96px;min-width:0}
+header.hero{padding-bottom:40px;margin-bottom:16px;border-bottom:1px solid var(--grey-200)}
+header.hero .eyebrow{color:var(--lyzr-orange)}
+h1{font-size:clamp(36px,5vw,56px);line-height:1.05;letter-spacing:-.035em;margin:0 0 20px;max-width:16ch}
+header.hero p{font-size:20px;line-height:1.4;letter-spacing:-.01em;color:var(--grey-800);max-width:58ch;margin:0}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:24px;font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--grey-700)}
+section{padding:48px 0;border-bottom:1px solid var(--grey-200)}
+section:last-child{border-bottom:0}
+h2{font-size:clamp(28px,3.4vw,36px);line-height:1.15;letter-spacing:-.025em;margin:0 0 20px}
+h3{font-size:21px;line-height:1.4;letter-spacing:-.01em;margin:36px 0 12px}
+p,li{max-width:68ch}
+p{margin:0 0 16px}
+.lead{font-size:20px;line-height:1.45;letter-spacing:-.01em}
+ol,ul{padding-left:22px;margin:0 0 16px}
+li{margin:6px 0}
+li::marker{color:var(--grey-600);font-family:var(--font-mono);font-size:.85em}
+code{font-family:var(--font-mono);font-size:.84em;background:var(--grey-100);border:1px solid var(--grey-200);border-radius:4px;padding:1px 5px;word-break:break-word}
+.note{color:var(--grey-700);font-size:15px}
+.filelink{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;font-size:12px}
+.fields{display:grid;grid-template-columns:1fr;gap:12px;margin:24px 0 28px}
+.field{border:1px solid var(--grey-200);border-radius:6px;background:#FFFFFF;overflow:hidden}
+.field-head{display:flex;justify-content:space-between;align-items:center;min-height:42px;padding:6px 12px 6px 16px;border-bottom:1px solid var(--grey-200);background:var(--grey-100)}
+.field-val{padding:12px 16px;font-size:16px;line-height:1.5}
+.field.plain{background:transparent}
+.field.plain .field-head{background:transparent}
+.outcome-label{margin-top:4px}
+dl.outcome{display:grid;grid-template-columns:150px minmax(0,1fr);gap:0;margin:8px 0 32px;border:1px solid var(--grey-200);border-radius:6px;background:#FFFFFF;overflow:hidden}
+dl.outcome dt{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;font-size:11px;color:var(--grey-700);padding:12px 14px;background:var(--grey-100);border-bottom:1px solid var(--grey-200)}
+dl.outcome dd{margin:0;padding:10px 16px;border-bottom:1px solid var(--grey-200);font-size:15px;line-height:1.5}
+dl.outcome dt:last-of-type,dl.outcome dd:last-of-type{border-bottom:0}
+.codewrap{margin:16px 0 24px;border:1px solid var(--grey-200);border-radius:6px;background:#FFFFFF;overflow:hidden}
+.code-head{display:flex;justify-content:space-between;align-items:center;padding:8px 12px 8px 16px;border-bottom:1px solid var(--grey-200);background:var(--grey-100)}
+.code-label{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;font-size:11.5px;color:var(--grey-700)}
+button.copy{font-family:var(--font-sans);font-size:14px;background:transparent;color:var(--lyzr-black);border:1px solid var(--lyzr-black);border-radius:4px;padding:4px 14px;cursor:pointer}
+button.copy:hover{background:var(--lyzr-black);color:var(--lyzr-offwhite)}
+button.copy.done{border-color:var(--grey-600);color:var(--grey-700);background:transparent}
+pre{margin:0;padding:16px;overflow:auto;max-height:520px;font-family:var(--font-mono);font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+pre code{background:none;border:0;padding:0;font-size:inherit}
+.tablewrap{overflow-x:auto;margin:16px 0 24px;border:1px solid var(--grey-200);border-radius:6px;background:#FFFFFF}
+table{border-collapse:collapse;width:100%;font-size:15px;line-height:1.45}
+th{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.05em;font-size:11.5px;color:var(--grey-700);text-align:left;background:var(--grey-100)}
+th,td{padding:10px 14px;border-bottom:1px solid var(--grey-200);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+figure{margin:24px 0}
+.diagram{width:100%;height:auto;display:block;background:#FFFFFF;border:1px solid var(--grey-200);border-radius:6px}
+.d-title{font-family:var(--font-sans);font-size:15px;fill:var(--lyzr-black)}
+.d-name{font-family:var(--font-sans);font-size:14px;fill:var(--lyzr-black)}
+.d-sub{font-family:var(--font-sans);font-size:12px;fill:var(--grey-700)}
+.d-mono{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;fill:var(--grey-700)}
+figcaption{font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;font-size:11.5px;color:var(--grey-700);margin-top:10px}
+.expect{padding-left:14px;border-left:2px solid var(--grey-300);color:var(--grey-800)}
+.expect .eyebrow{display:inline;margin-right:8px}
+footer{margin-top:48px;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--grey-600)}
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--grey-200);padding:20px 16px}
+  aside ol{display:flex;flex-wrap:wrap;gap:4px 16px}
+  aside li a{padding:4px 0;font-size:14px}
+  main{padding:32px 16px 64px}
+  dl.outcome{grid-template-columns:1fr}
+  dl.outcome dt{border-bottom:0;padding:10px 14px 4px}
+  dl.outcome dd{padding:4px 14px 12px}
+}
+@media print{
+  aside,button.copy{display:none}
+  .layout{display:block}
+  pre{max-height:none}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside aria-label="Contents">
+<p class="eyebrow">Contents</p>
+<ol><li><a href="#overview"><span class="num">01</span>Overview</a></li><li><a href="#architecture"><span class="num">02</span>Architecture</a></li><li><a href="#setup"><span class="num">03</span>Setup</a></li><li><a href="#triage-rules"><span class="num">04</span>How triage decides</a></li><li><a href="#agent-1"><span class="num">05</span>Agent 1: Bug Intake Agent</a></li><li><a href="#agent-2"><span class="num">06</span>Agent 2: Known Issues and Context Agent</a></li><li><a href="#agent-3"><span class="num">07</span>Agent 3: Triage and Routing Agent</a></li><li><a href="#manager"><span class="num">08</span>Manager: Bug Triage Coordinator</a></li><li><a href="#tests"><span class="num">09</span>Test inputs</a></li><li><a href="#troubleshooting"><span class="num">10</span>Troubleshooting</a></li></ol>
+</aside>
+<main>
+<header class="hero">
+<p class="eyebrow">Lyzr Agent Studio · Co-build</p>
+<h1>IT Bug Triage Co-Build</h1>
+<p>A follow-along guide to building a manager agent and three specialist agents that turn messy bug reports into routed tickets.</p>
+<div class="hero-meta"><span>60 min session</span><span>4 agents</span><span>2 knowledge bases</span><span>2 semantic models</span></div>
+</header>
+<section id="overview"><p class="eyebrow">01</p><h2>Overview</h2><p class='lead'>In 60 minutes we build a multi-agent system that takes a raw bug report and returns a triaged ticket: a priority, a named owner, an SLA, a duplicate check and a drafted reply to the reporter.</p><p><strong>The problem.</strong> Bug reports arrive by email, Slack, the service desk portal and Jira. They're vague, they're missing details, and the same issue gets reported many times. L1 support spends hours each day reading, deduplicating, setting priority and routing.</p><p><strong>What we build.</strong> A manager agent coordinating three specialist agents in Lyzr Agent Studio:</p><ol><li><strong>Bug Intake Agent</strong> turns raw text into a structured ticket, or asks clarifying questions.</li><li><strong>Known Issues &amp; Context Agent</strong> finds duplicates, the likely cause and a workaround from the knowledge base.</li><li><strong>Triage &amp; Routing Agent</strong> sets the priority, picks a named owner from the semantic data model, applies the SLA and escalates to a human.</li></ol></section><section id="architecture"><p class="eyebrow">02</p><h2>Architecture</h2><p>The manager runs the agents in sequence and stops early when a report is too incomplete to triage.</p><figure><svg viewBox="0 0 760 624" role="img" aria-label="Triage pipeline: manager agent runs Intake, Context and Triage agents in sequence" class="diagram">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8A857C"/></marker></defs>
+<text x="24" y="28" class="d-title">Every report clears Intake before it is triaged and routed</text>
+<rect x="196" y="124" width="268" height="384" rx="6" fill="#F1F0EE" stroke="#CFCCC7"/>
+<text x="212" y="146" class="d-mono">MANAGER AGENT</text>
+<g fill="none" stroke="#8A857C" stroke-width="1.25">
+<path d="M330 92V160" marker-end="url(#arr)"/><path d="M330 216V244" marker-end="url(#arr)"/><path d="M330 316V344" marker-end="url(#arr)"/>
+<path d="M270 280H188" marker-end="url(#arr)"/><path d="M330 400V436" marker-end="url(#arr)"/><path d="M330 492V544" marker-end="url(#arr)"/>
+</g>
+<g fill="none" stroke="#8A857C" stroke-width="1.25" stroke-dasharray="4 4">
+<path d="M516 372H440" marker-end="url(#arr)"/><path d="M516 464H440" marker-end="url(#arr)"/>
+</g>
+<rect x="220" y="52" width="220" height="40" rx="6" fill="#FFFFFF" stroke="#8A857C"/>
+<text x="330" y="77" class="d-name" text-anchor="middle">Raw bug report</text>
+<rect x="220" y="160" width="220" height="56" rx="6" fill="#FFFFFF" stroke="#8A857C"/>
+<text x="330" y="184" class="d-name" text-anchor="middle">Bug Intake Agent</text>
+<text x="330" y="202" class="d-sub" text-anchor="middle">structures the ticket</text>
+<polygon points="270,280 330,244 390,280 330,316" fill="#FFFFFF" stroke="#8A857C"/>
+<text x="330" y="285" class="d-name" text-anchor="middle">Complete?</text>
+<rect x="220" y="344" width="220" height="56" rx="6" fill="#FFFFFF" stroke="#8A857C"/>
+<text x="330" y="368" class="d-name" text-anchor="middle">Context Agent</text>
+<text x="330" y="386" class="d-sub" text-anchor="middle">duplicates, cause, workaround</text>
+<rect x="220" y="436" width="220" height="56" rx="6" fill="#FFFFFF" stroke="#8A857C"/>
+<text x="330" y="460" class="d-name" text-anchor="middle">Triage and Routing Agent</text>
+<text x="330" y="478" class="d-sub" text-anchor="middle">priority, owner, SLA</text>
+<rect x="220" y="544" width="220" height="56" rx="6" fill="#FFFFFF" stroke="#FE4B1E" stroke-width="2"/>
+<text x="330" y="568" class="d-name" text-anchor="middle">Triage summary</text>
+<text x="330" y="586" class="d-sub" text-anchor="middle">named owner, SLA, draft reply</text>
+<rect x="12" y="252" width="176" height="56" rx="6" fill="#FFFFFF" stroke="#8A857C"/>
+<text x="100" y="276" class="d-name" text-anchor="middle">Clarifying questions</text>
+<text x="100" y="294" class="d-sub" text-anchor="middle">sent to the reporter</text>
+<rect x="516" y="336" width="232" height="72" rx="6" fill="#FFFFFF" stroke="#8A857C"/>
+<text x="632" y="360" class="d-name" text-anchor="middle">Context data</text>
+<text x="632" y="378" class="d-sub" text-anchor="middle">release notes, runbooks (KB)</text>
+<text x="632" y="394" class="d-sub" text-anchor="middle">known issues (SDM)</text>
+<rect x="516" y="428" width="232" height="72" rx="6" fill="#FFFFFF" stroke="#8A857C"/>
+<text x="632" y="452" class="d-name" text-anchor="middle">Triage data</text>
+<text x="632" y="470" class="d-sub" text-anchor="middle">severity rules and SLAs (KB)</text>
+<text x="632" y="486" class="d-sub" text-anchor="middle">named owners (SDM)</text>
+<text x="340" y="334" class="d-sub">yes</text>
+<text x="229" y="270" class="d-sub" text-anchor="middle">needs info</text>
+<text x="456" y="568" class="d-sub">Human review flagged for P1,</text>
+<text x="456" y="584" class="d-sub">fallback owner, or unsure calls</text>
+</svg><figcaption>Triage pipeline: manager, 3 agents, 2 sets of data sources</figcaption></figure><p>Intake must return a complete ticket before the Context and Triage agents run. Each specialist agent has one knowledge base for documents and one semantic model for its table: the Context Agent uses Bug Context Docs and Known Issues, and the Triage Agent uses Triage Rules and Component Owners.</p></section><section id="setup"><p class="eyebrow">03</p><h2>Setup</h2><h3 style='margin-top:0'>Download the files</h3><p>You need these five files. Download them all before the session.</p><div class="tablewrap"><table><thead><tr><th>File</th><th>What it holds</th><th>Goes into</th></tr></thead><tbody><tr><td><a href='files/known_issues.csv' download>known_issues.csv</a></td><td>15 known bugs with symptom, root cause, workaround and linked release</td><td>Known Issues semantic model</td></tr><tr><td><a href='files/component_owners.csv' download>component_owners.csv</a></td><td>Owners for 9 components plus a Service Desk fallback row</td><td>Component Owners semantic model</td></tr><tr><td><a href='files/release_notes.docx' download>release_notes.docx</a></td><td>Releases 4.1.6 to 4.2.3 and what each changed</td><td>Bug Context Docs knowledge base</td></tr><tr><td><a href='files/runbooks.docx' download>runbooks.docx</a></td><td>6 runbooks, RB-01 to RB-06</td><td>Bug Context Docs knowledge base</td></tr><tr><td><a href='files/severity_rubric.docx' download>severity_rubric.docx</a></td><td>Always-P1 rules, priority matrix, human-review rules, SLA table</td><td>Triage Rules knowledge base</td></tr></tbody></table></div><p><a class='filelink' href='files/bug-triage-files.zip' download>Download all five as a zip</a></p><h3>Where each file goes</h3><p>The setup uses four separate data stores: the text documents go into 2 knowledge bases, and each CSV becomes its own semantic model. No file sits in more than one place, so an agent can never retrieve a stale copy.</p><div class="tablewrap"><table><thead><tr><th>Data store</th><th>Type</th><th>Files</th><th>Attached to</th></tr></thead><tbody><tr><td>Bug Context Docs</td><td>Knowledge base</td><td><code>release_notes.docx</code>, <code>runbooks.docx</code></td><td>Context Agent</td></tr><tr><td>Triage Rules</td><td>Knowledge base</td><td><code>severity_rubric.docx</code></td><td>Triage Agent</td></tr><tr><td>Known Issues</td><td>Semantic model</td><td><code>known_issues.csv</code></td><td>Context Agent</td></tr><tr><td>Component Owners</td><td>Semantic model</td><td><code>component_owners.csv</code></td><td>Triage Agent</td></tr></tbody></table></div><h3>Knowledge bases (2)</h3><ol><li>Go to <strong>Knowledge Base</strong>, click <strong>Create New</strong>, and create a classic knowledge base named <strong>Bug Context Docs</strong>. Upload <code>release_notes.docx</code> and <code>runbooks.docx</code>.</li><li>Create a second one named <strong>Triage Rules</strong> and upload <code>severity_rubric.docx</code>.</li><li>Attach Bug Context Docs to the Context Agent and Triage Rules to the Triage Agent.</li></ol><h3>Semantic models (2)</h3><p>Repeat these steps once for <code>known_issues.csv</code> and once for <code>component_owners.csv</code>.</p><ol><li>Upload the CSV in <strong>Connections &gt; Data Connectors &gt; File Upload</strong>.</li><li>Go to <strong>Knowledge Base</strong>, click <strong>Create New</strong>, choose <strong>Semantic Model</strong>, and choose the data source you just added.</li><li>Create or choose a <strong>Schema Documentation Agent</strong>.</li><li>Select the table. Keep to just this one table per model.</li><li>Review the generated table and column descriptions and edit them to match the ones below before saving.</li><li>Open the agent, enable <strong>Data Query</strong>, and select the semantic model: Known Issues on the Context Agent, Component Owners on the Triage Agent.</li></ol><h3>Descriptions for Known Issues</h3><ul><li>Table: "Log of known product bugs with their symptom, root cause, workaround, status and the release that introduced them."</li><li><code>component</code>: exact component name, e.g. Payments, Reports &amp; Export.</li><li><code>symptom</code> and <code>error_message</code>: what users see. Used to match new reports to existing issues.</li><li><code>root_cause</code>: the confirmed cause of the issue.</li><li><code>workaround</code>: what users can do until it's fixed.</li><li><code>linked_release</code>: the release that introduced or fixed the issue.</li><li><code>status</code>: Open or Resolved.</li></ul><h3>Descriptions for Component Owners</h3><ul><li>Table: "Maps each product component to its owning team and the named people responsible for bugs in it."</li><li><code>component</code>: exact component name, e.g. Payments, Login &amp; SSO.</li><li><code>on_call_engineer</code>: person assigned P1 and P2 bugs.</li><li><code>primary_assignee</code>: person assigned P3 and P4 bugs.</li><li><code>notes</code>: what the component covers, e.g. "checkout, card processing, refunds". Used for fuzzy matching.</li></ul><h3>Check before the session</h3><ul><li>Ask the Context Agent: "Which open issues exist for Reports &amp; Export?" It should return KI-1042.</li><li>Ask the Triage Agent: "Who is the on_call_engineer and engineering_manager for Payments?" It should return Aisha Okafor and Meera Iyer.</li></ul><p class='note'>All names are fictional and the emails use example.com.</p></section><section id="triage-rules"><p class="eyebrow">04</p><h2>How triage decides</h2><p class='lead'>Priority comes from the severity rubric. The owner comes from the Component Owners table, and the priority decides which person on that row gets the bug.</p><p>These are the rules the Triage Agent applies. Walk through them with the room before building Agent 3, so everyone can predict the outcome before they run a test.</p><h3>Step 1: Check the Always-P1 rules</h3><p>A bug is P1, whatever its other factors, if any of these is true:</p><ul><li>A <strong>Critical</strong> component (Login &amp; SSO, Payments) is down or erroring for many or all users</li><li>There is data loss or data corruption</li><li>There is a security issue: unauthorized access, exposed data or broken permissions</li><li>Customers cannot pay or cannot log in, and there is no workaround</li></ul><h3>Step 2: Use the priority matrix</h3><p>If no Always-P1 rule applies, combine user impact with the component's business criticality.</p><div class="tablewrap"><table><thead><tr><th>User impact</th><th>Critical</th><th>High</th><th>Medium</th><th>Low</th></tr></thead><tbody><tr><td>All users or a whole region</td><td>P1</td><td>P2</td><td>P2</td><td>P3</td></tr><tr><td>Many users, a team or a customer</td><td>P1</td><td>P2</td><td>P3</td><td>P4</td></tr><tr><td>One or a few users</td><td>P2</td><td>P3</td><td>P3</td><td>P4</td></tr></tbody></table></div><p class='note'>Criticality by component: Critical is Login & SSO and Payments. High is Reports & Export, Integrations and Mobile App. Medium is Dashboard, Notifications and Search. Low is Settings.</p><h3>Step 3: Adjust for a workaround</h3><ul><li>If a reasonable workaround exists, lower the priority by one level, e.g. P2 to P3.</li><li>Never lower a bug that matched an Always-P1 rule, and never go below P4.</li><li>Cosmetic-only issues (alignment, colour, spacing, typos) are always P4.</li></ul><h3>Step 4: Assign by priority</h3><p>The agent finds the component's row in the Component Owners table, then picks the person by priority.</p><div class="tablewrap"><table><thead><tr><th>Priority</th><th>Assigned to</th><th>Also notified</th><th>First response</th><th>Resolution</th></tr></thead><tbody><tr><td>P1, Critical</td><td>On-call engineer</td><td>Engineering manager and backup engineer, in the on-call channel</td><td>15 minutes</td><td>4 hours</td></tr><tr><td>P2, High</td><td>On-call engineer</td><td>Engineering manager, in the on-call channel</td><td>1 hour</td><td>1 business day</td></tr><tr><td>P3, Medium</td><td>Primary assignee</td><td>Nobody, goes to the team queue</td><td>4 business hours</td><td>5 business days</td></tr><tr><td>P4, Low</td><td>Primary assignee</td><td>Nobody, goes to the team backlog</td><td>2 business days</td><td>Next release, max 30 days</td></tr></tbody></table></div><p class='note'>Business hours are Monday to Friday, 9:00 to 18:00 in the reporter's time zone. P1 and P2 response targets apply around the clock.</p><h3>Step 5: Flag for human review</h3><p>The agent sets requires_human_review to true if any of these apply:</p><ul><li>The priority is P1</li><li>The component is not in the table, so the Service Desk fallback row was used</li><li>The bug could reasonably be two different priority levels</li><li>The report mentions security, data loss, legal, compliance or a named VIP customer</li></ul><h3>Who owns what</h3><p>The full Component Owners table. All names are fictional.</p><div class="tablewrap"><table><thead><tr><th>Component</th><th>Criticality</th><th>Team</th><th>Primary (P3, P4)</th><th>On-call (P1, P2)</th><th>Backup</th><th>Eng. manager</th><th>Channel</th></tr></thead><tbody><tr><td>Login &amp; SSO</td><td>Critical</td><td>Identity Platform</td><td>Rohan Mehta</td><td>Sara Lindqvist</td><td>Kenji Watanabe</td><td>Ananya Rao</td><td><code>#oncall-identity</code></td></tr><tr><td>Payments</td><td>Critical</td><td>Payments Engineering</td><td>Lukas Becker</td><td>Aisha Okafor</td><td>Diego Fernandez</td><td>Meera Iyer</td><td><code>#oncall-payments</code></td></tr><tr><td>Reports &amp; Export</td><td>High</td><td>Data &amp; Reporting</td><td>Neha Kulkarni</td><td>Tom Brennan</td><td>Yusuf Demir</td><td>Grace Chen</td><td><code>#oncall-reporting</code></td></tr><tr><td>Integrations</td><td>High</td><td>Integrations Team</td><td>Arjun Nair</td><td>Emily Carter</td><td>Pablo Ruiz</td><td>Farah Siddiqui</td><td><code>#oncall-integrations</code></td></tr><tr><td>Mobile App</td><td>High</td><td>Mobile Engineering</td><td>Kavya Reddy</td><td>Jonas Weber</td><td>Hana Kim</td><td>Vikram Singh</td><td><code>#oncall-mobile</code></td></tr><tr><td>Dashboard</td><td>Medium</td><td>Frontend Core</td><td>Ishaan Gupta</td><td>Chloe Martin</td><td>Samuel Osei</td><td>Laura Bianchi</td><td><code>#oncall-frontend</code></td></tr><tr><td>Notifications</td><td>Medium</td><td>Messaging</td><td>Divya Menon</td><td>Noah Fischer</td><td>Leila Haddad</td><td>Karthik Subramanian</td><td><code>#oncall-messaging</code></td></tr><tr><td>Search</td><td>Medium</td><td>Search &amp; Discovery</td><td>Aditi Joshi</td><td>Ben Thompson</td><td>Mei Lin</td><td>Rahul Verma</td><td><code>#oncall-search</code></td></tr><tr><td>Settings</td><td>Low</td><td>Frontend Core</td><td>Ishaan Gupta</td><td>Chloe Martin</td><td>Samuel Osei</td><td>Laura Bianchi</td><td><code>#oncall-frontend</code></td></tr><tr><td>Service Desk (fallback)</td><td>n/a</td><td>Service Desk</td><td>Tanvi Shah</td><td>Mark Ellis</td><td>Zara Ahmed</td><td>Nikhil Bhat</td><td><code>#service-desk</code></td></tr></tbody></table></div></section><section id="agent-1"><p class="eyebrow">05</p><h2>Agent 1: Bug Intake Agent</h2><p>This agent turns raw text into a structured ticket with a canonical component name, or stops and asks for missing details. Downstream routing depends on the exact component name, so this is the step that makes everything else work.</p><div class="fields"><div class="field"><div class="field-head"><span class="code-label">Name</span><button class="copy" data-target="f1" type="button">Copy</button></div><div class="field-val" id="f1">Bug Intake Agent</div></div><div class="field"><div class="field-head"><span class="code-label">Description</span><button class="copy" data-target="f2" type="button">Copy</button></div><div class="field-val" id="f2">Converts raw bug reports into a structured ticket and flags any missing information.</div></div><div class="field"><div class="field-head"><span class="code-label">Role</span><button class="copy" data-target="f3" type="button">Copy</button></div><div class="field-val" id="f3">IT service desk intake analyst</div></div><div class="field"><div class="field-head"><span class="code-label">Goal</span><button class="copy" data-target="f4" type="button">Copy</button></div><div class="field-val" id="f4">Turn any raw bug report into a complete, structured ticket, and identify exactly what information is missing.</div></div><div class="field plain"><div class="field-head"><span class="code-label">Features</span></div><div class="field-val">Structured output (JSON). No knowledge base.</div></div></div><div class="codewrap"><div class="code-head"><span class="code-label">Instructions</span><button class="copy" data-target="c5" type="button">Copy</button></div><pre id="c5"><code>You receive a raw bug report from email, Slack, or a service desk form. It may be vague, informal, or incomplete.
+
+1. Extract the following fields. If a field is not stated, set it to null. Never guess or invent values.
+   - title (short, specific, max 12 words)
+   - component: map to EXACTLY ONE of these names. Use the synonyms to decide:
+     - Login &amp; SSO: login, sign in, SSO, Okta, Azure AD, password reset, MFA, session, logged out
+     - Payments: checkout, payment, card, refund, invoice, VAT, tax, purchase, billing
+     - Reports &amp; Export: report, export, PDF, CSV, Excel, scheduled report
+     - Integrations: Jira, Salesforce, Slack integration, webhook, sync
+     - Mobile App: iOS, Android, mobile app
+     - Dashboard: dashboard, widget, chart, home page
+     - Notifications: email alert, notification, Slack alert
+     - Search: search, filter, results
+     - Settings: settings, profile, appearance, preferences
+     If nothing fits, use the reporter's own term exactly (e.g. "Audit Log"). Never output a name outside this list unless nothing fits.
+   - environment (prod/staging/dev, browser/OS, app version)
+   - steps_to_reproduce (numbered list)
+   - expected_behavior
+   - actual_behavior
+   - error_messages (verbatim, if any)
+   - users_affected (one user / team / many / all)
+   - reported_at
+
+2. Critical fields are: component, actual_behavior, environment.
+   If any critical field is null, set "status" to "needs_info".
+   Otherwise set "status" to "complete".
+
+3. If the status is "needs_info", write 2–3 short, friendly clarifying questions for the reporter. Ask only about the missing critical fields.
+
+Return only JSON, with no commentary, in exactly this format:
+{
+  "status": "complete | needs_info",
+  "ticket": {
+    "title": "",
+    "component": "",
+    "environment": "",
+    "steps_to_reproduce": [],
+    "expected_behavior": "",
+    "actual_behavior": "",
+    "error_messages": "",
+    "users_affected": "",
+    "reported_at": ""
+  },
+  "missing_fields": [],
+  "clarifying_questions": []
+}</code></pre></div></section><section id="agent-2"><p class="eyebrow">06</p><h2>Agent 2: Known Issues and Context Agent</h2><p>This agent checks the ticket against the knowledge base and returns duplicates, the likely cause and a workaround, with citations. When a high-confidence duplicate has a documented root cause, it uses that cause rather than hedging.</p><div class="fields"><div class="field"><div class="field-head"><span class="code-label">Name</span><button class="copy" data-target="f6" type="button">Copy</button></div><div class="field-val" id="f6">Known Issues &amp; Context Agent</div></div><div class="field"><div class="field-head"><span class="code-label">Description</span><button class="copy" data-target="f7" type="button">Copy</button></div><div class="field-val" id="f7">Checks a structured ticket against known issues, past tickets and release notes to find duplicates and likely causes.</div></div><div class="field"><div class="field-head"><span class="code-label">Role</span><button class="copy" data-target="f8" type="button">Copy</button></div><div class="field-val" id="f8">IT problem-management analyst</div></div><div class="field"><div class="field-head"><span class="code-label">Goal</span><button class="copy" data-target="f9" type="button">Copy</button></div><div class="field-val" id="f9">Find out whether this bug is already known, what probably caused it, and whether a workaround exists.</div></div><div class="field plain"><div class="field-head"><span class="code-label">Features</span></div><div class="field-val">Knowledge base: Bug Context Docs (<code>release_notes.docx</code>, <code>runbooks.docx</code>). Data Query: Known Issues semantic model (<code>known_issues.csv</code>). Structured output (JSON).</div></div></div><div class="codewrap"><div class="code-head"><span class="code-label">Instructions</span><button class="copy" data-target="c10" type="button">Copy</button></div><pre id="c10"><code>You receive a structured bug ticket. You have two sources:
+- the Known Issues semantic model (known_issues table) for past and open bugs
+- the Bug Context Docs knowledge base for release notes and runbooks
+
+1. Duplicates: query the known_issues table for rows where component = the ticket's component. Compare each row's symptom and error_message with the ticket's actual_behavior and error_messages. For each match, give the issue ID and a confidence score:
+   - high: same component and same error or symptom
+   - medium: same component and a similar symptom
+   - low: related symptom only
+   List at most 3 matches.
+
+2. Likely cause:
+   - If you found a high-confidence duplicate and its row has a root_cause, use that root cause and its linked_release. Cite the issue ID.
+   - Otherwise, search the release notes for a recent release that touched this component.
+   - If there is no evidence from either source, return "unknown".
+
+3. Workaround: use the workaround column of a matched issue, or a workaround from the runbooks. Quote it briefly.
+
+4. Cite the source for every claim (issue ID, release number, or runbook ID).
+
+Return only JSON, with no commentary, in exactly this format:
+{
+  "duplicates": [{ "issue_id": "", "summary": "", "confidence": "high | medium | low" }],
+  "likely_cause": "",
+  "workaround": "",
+  "sources": []
+}</code></pre></div></section><section id="agent-3"><p class="eyebrow">07</p><h2>Agent 3: Triage and Routing Agent</h2><p>This agent sets the priority from the rubric, picks a named owner from the semantic data model, applies the SLA and flags anything risky for a human. Its owner lookup always ends with a person, because the fallback row guarantees a match.</p><div class="fields"><div class="field"><div class="field-head"><span class="code-label">Name</span><button class="copy" data-target="f11" type="button">Copy</button></div><div class="field-val" id="f11">Triage &amp; Routing Agent</div></div><div class="field"><div class="field-head"><span class="code-label">Description</span><button class="copy" data-target="f12" type="button">Copy</button></div><div class="field-val" id="f12">Assigns priority, a named owner and the SLA, and drafts the internal summary and the reply to the reporter.</div></div><div class="field"><div class="field-head"><span class="code-label">Role</span><button class="copy" data-target="f13" type="button">Copy</button></div><div class="field-val" id="f13">IT incident triage lead</div></div><div class="field"><div class="field-head"><span class="code-label">Goal</span><button class="copy" data-target="f14" type="button">Copy</button></div><div class="field-val" id="f14">Give every bug a justified priority and a named owner, and escalate to a human whenever the stakes are high.</div></div><div class="field plain"><div class="field-head"><span class="code-label">Features</span></div><div class="field-val">Knowledge base: Triage Rules (<code>severity_rubric.docx</code>). Data Query: Component Owners semantic model (<code>component_owners.csv</code>). Structured output (JSON).</div></div></div><div class="codewrap"><div class="code-head"><span class="code-label">Instructions</span><button class="copy" data-target="c15" type="button">Copy</button></div><pre id="c15"><code>You receive a structured ticket and its context: duplicates, likely cause, and workaround. Use the knowledge base for the severity rubric and SLA table. Use the Semantic Data Model for owners.
+
+1. Priority: assign P1–P4 using the severity rubric. Check the Always-P1 rules first, then the priority matrix (user impact x business criticality). If a reasonable workaround exists, lower the priority by one level, but never lower an Always-P1 bug and never go below P4. Cosmetic-only issues are always P4. Justify the choice in one sentence.
+
+2. Routing: query the component_owners table in the Semantic Data Model. Do NOT use the knowledge base for people. Run these lookups in order and stop at the first one that returns a row:
+   a. Exact match: component = &lt;ticket component&gt;
+   b. Fuzzy match: the notes column contains the ticket's component term (e.g. notes LIKE '%checkout%')
+   c. Fallback: component = 'Service Desk (fallback)'. Also set requires_human_review to true.
+   You must always end with a row. Lookup c always succeeds.
+
+   Then pick people by priority:
+   - P1: assigned_to = on_call_engineer. notify = engineering_manager and backup_engineer.
+   - P2: assigned_to = on_call_engineer. notify = engineering_manager.
+   - P3 or P4: assigned_to = primary_assignee. notify = nobody.
+   In routing_note, say which lookup matched (a, b, or c).
+   Return names and emails exactly as they appear in the table.
+
+3. SLA: use the SLA table to set the response and resolution targets for that priority.
+
+4. Duplicates: if the context includes a high-confidence duplicate, set action to "link_to_existing" with that issue ID. Otherwise set it to "create_new".
+
+5. Human review: set requires_human_review to true if ANY of these apply:
+   - the priority is P1
+   - lookup c (fallback) was used
+   - you are unsure between two priority levels
+   - the report mentions security, data loss, legal, compliance, or a named VIP customer
+   Otherwise set it to false.
+
+6. Draft two messages:
+   - internal_summary: 3–4 lines for the assignee covering the issue, impact, likely cause, and workaround
+   - reporter_reply: 2–3 friendly lines confirming receipt, the priority, and next steps. Mention the workaround if there is one. Avoid internal jargon.
+
+Return only JSON, with no commentary, in exactly this format:
+{
+  "priority": "P1 | P2 | P3 | P4",
+  "priority_reason": "",
+  "owning_team": "",
+  "assignee_group": "",
+  "assigned_to": { "name": "", "email": "" },
+  "notify": [{ "name": "", "email": "", "role": "" }],
+  "on_call_channel": "",
+  "routing_note": "",
+  "sla": { "response": "", "resolution": "" },
+  "action": "create_new | link_to_existing",
+  "linked_issue_id": "",
+  "requires_human_review": true,
+  "internal_summary": "",
+  "reporter_reply": ""
+}</code></pre></div><p><strong>Test it on its own</strong> with the payloads under Test inputs. A quick check of the data model connection:</p><div class="codewrap"><div class="code-head"><span class="code-label">Check prompt</span><button class="copy" data-target="c16" type="button">Copy</button></div><pre id="c16"><code>Query the component_owners table: who is the on_call_engineer and engineering_manager for Payments? Return names and emails.</code></pre></div></section><section id="manager"><p class="eyebrow">08</p><h2>Manager: Bug Triage Coordinator</h2><p>The manager routes the report through the three agents in order and formats the result. It copies names, priorities and issue IDs exactly as returned, and never re-decides anything.</p><div class="fields"><div class="field"><div class="field-head"><span class="code-label">Name</span><button class="copy" data-target="f17" type="button">Copy</button></div><div class="field-val" id="f17">Bug Triage Coordinator</div></div><div class="field"><div class="field-head"><span class="code-label">Description</span><button class="copy" data-target="f18" type="button">Copy</button></div><div class="field-val" id="f18">Runs the triage pipeline from start to finish on an incoming bug report.</div></div><div class="field"><div class="field-head"><span class="code-label">Role</span><button class="copy" data-target="f19" type="button">Copy</button></div><div class="field-val" id="f19">IT bug triage coordinator</div></div><div class="field"><div class="field-head"><span class="code-label">Goal</span><button class="copy" data-target="f20" type="button">Copy</button></div><div class="field-val" id="f20">Take a raw bug report and return a triaged, routed ticket, or clarifying questions if the report is too incomplete to triage.</div></div><div class="field plain"><div class="field-head"><span class="code-label">Sub-agents</span></div><div class="field-val">Bug Intake Agent, Known Issues &amp; Context Agent, Triage &amp; Routing Agent.</div></div></div><div class="codewrap"><div class="code-head"><span class="code-label">Instructions</span><button class="copy" data-target="c21" type="button">Copy</button></div><pre id="c21"><code>You coordinate three sub-agents. Follow this order strictly.
+
+1. Send the raw bug report to the Bug Intake Agent.
+
+2. If it returns status "needs_info", STOP. Return the clarifying questions to the user, plus a note listing the missing fields. Do not call the other agents.
+
+3. If the status is "complete", send the structured ticket to the Known Issues &amp; Context Agent.
+
+4. Send the structured ticket AND the Context Agent's full output to the Triage &amp; Routing Agent.
+
+5. Build the final triage summary from the sub-agents' outputs. Copy every value exactly as returned, especially names, emails, priority, and issue IDs. Do not paraphrase, shorten, or replace a person's name with a role or team. If a field is missing or null in the Triage Agent's output, write "Not returned by Triage Agent". Do not fill it in yourself.
+
+Use this format:
+
+**Ticket:** &lt;title&gt;
+**Component:** &lt;component&gt; | **Environment:** &lt;environment&gt;
+
+**Priority:** &lt;priority&gt;, &lt;priority_reason&gt;
+
+**Assigned to:** &lt;assigned_to.name&gt; (&lt;assigned_to.email&gt;)
+**Notify:** &lt;each person in notify: name (email), role&gt;. Write "None" if the list is empty.
+**Team:** &lt;owning_team&gt; / &lt;assignee_group&gt; | **Channel:** &lt;on_call_channel&gt;
+**SLA:** Response &lt;sla.response&gt; | Resolution &lt;sla.resolution&gt;
+
+**Action:** &lt;create_new / link_to_existing&gt; &lt;linked_issue_id if any&gt;
+**Likely cause:** &lt;likely_cause from Context Agent&gt;
+**Workaround:** &lt;workaround from Context Agent, or "None"&gt;
+
+&lt;If requires_human_review is true, add this line:&gt;
+⚠️ **Needs human review**
+
+**Internal summary:** &lt;internal_summary&gt;
+**Draft reply to reporter:** &lt;reporter_reply&gt;
+
+Your job is to route and format. Never re-decide the priority, the owner, or the duplicate status.</code></pre></div></section><section id="tests"><p class="eyebrow">09</p><h2>Test inputs</h2><p>Run these through the manager in order: 1 shows the early exit, 2 shows retrieval, 3 is the escalation, 4 shows a calm P4, and 5 tests the fallback guardrail. Each test lists who the bug should go to, at what priority, and why.</p><div class="tablewrap"><table><thead><tr><th>#</th><th>Report</th><th>Priority</th><th>Assigned to</th><th>Notified</th><th>Action</th><th>Human review</th></tr></thead><tbody><tr><td>1</td><td>Vague login</td><td>None (stops at Intake)</td><td>Nobody yet</td><td>Nobody</td><td>Clarifying questions</td><td>n/a</td></tr><tr><td>2</td><td>PDF export timeout</td><td>P3 (P2 lowered for workaround)</td><td>Neha Kulkarni</td><td>Nobody</td><td>Link to KI-1042</td><td>No</td></tr><tr><td>3</td><td>EU payments outage</td><td>P1 (Always P1)</td><td>Aisha Okafor</td><td>Meera Iyer, Diego Fernandez</td><td>Create new</td><td>Yes</td></tr><tr><td>4</td><td>Settings button overlap</td><td>P4 (cosmetic)</td><td>Ishaan Gupta</td><td>Nobody</td><td>Create new</td><td>No</td></tr><tr><td>5</td><td>Audit Log blank</td><td>P3, possibly P2</td><td>Tanvi Shah (fallback)</td><td>Nobody if P3</td><td>Create new</td><td>Yes (fallback + compliance)</td></tr></tbody></table></div><h3>Test 1: Vague report</h3><div class="codewrap"><div class="code-head"><span class="code-label">Paste into the manager</span><button class="copy" data-target="c22" type="button">Copy</button></div><pre id="c22"><code>hey team, login is broken again 😩 can't get in. tried a couple times. pls fix asap, need to submit stuff today</code></pre></div><p class='eyebrow outcome-label'>Expected outcome</p><dl class="outcome"><dt>Result</dt><dd>Stops at Intake with <code>needs_info</code>. The Context and Triage agents are not called.</dd><dt>Missing</dt><dd>Environment and the actual behavior. The component maps to Login &amp; SSO, but there is no error or browser.</dd><dt>Clarifying questions</dt><dd>How do you sign in (password, SSO or magic link)? What error do you see? Which browser and device?</dd><dt>Priority and owner</dt><dd>None yet. A report is only triaged once it is complete.</dd><dt>Teaching point</dt><dd>The early exit. Agents should ask rather than guess.</dd></dl><h3>Test 2: Duplicate</h3><div class="codewrap"><div class="code-head"><span class="code-label">Paste into the manager</span><button class="copy" data-target="c23" type="button">Copy</button></div><pre id="c23"><code>Subject: PDF export failing on monthly revenue report
+
+Hi Support,
+
+Since last week, exporting our Monthly Revenue report to PDF doesn't work. The export button spins for about a minute and then we get "504 Gateway Timeout". The report has around 12,000 rows.
+
+Steps:
+1. Go to Reports &gt; Monthly Revenue
+2. Set the date range to Oct 1 – Oct 31
+3. Click Export &gt; PDF
+
+Expected: PDF downloads
+Actual: 504 Gateway Timeout after ~60 seconds
+
+This is happening for everyone on our finance team (about 8 people). We're on production, using Chrome on Windows 11. We need this for our month-end close.
+
+Thanks,
+Priya Raman, Finance Ops</code></pre></div><p class='eyebrow outcome-label'>Expected outcome</p><dl class="outcome"><dt>Component</dt><dd>Reports &amp; Export (High criticality)</dd><dt>Priority</dt><dd><strong>P3</strong></dd><dt>Why</dt><dd>High criticality with a whole team affected is P2 on the matrix. A workaround exists (export as CSV), so it drops one level to P3.</dd><dt>Assigned to</dt><dd><strong>Neha Kulkarni</strong> (neha.kulkarni@example.com), primary assignee, because it is P3</dd><dt>Notify</dt><dd>Nobody. P3 goes to the team queue.</dd><dt>Team and channel</dt><dd>Data &amp; Reporting, <code>reporting-l2</code>, <code>#oncall-reporting</code></dd><dt>SLA</dt><dd>First response in 4 business hours, resolution in 5 business days</dd><dt>Action</dt><dd>Link to existing issue <strong>KI-1042</strong> (high-confidence duplicate)</dd><dt>Likely cause</dt><dd>The new PDF rendering engine in release 4.2.1 loads the full dataset into memory (from KI-1042)</dd><dt>Workaround</dt><dd>Export as CSV, or split the report into smaller date ranges</dd><dt>Human review</dt><dd>No</dd></dl><h3>Test 3: P1 outage</h3><div class="codewrap"><div class="code-head"><span class="code-label">Paste into the manager</span><button class="copy" data-target="c24" type="button">Copy</button></div><pre id="c24"><code>🚨 URGENT from #support-escalations
+
+Getting flooded with tickets: checkout is completely failing for EU customers since ~10am CET today. Every payment attempt returns a 500 error: "Something went wrong. Please try again later." Seeing it on web and mobile, production.
+
+US and APAC customers are paying fine, it's only EU (confirmed with customers in Germany, France, Netherlands). At least 40 tickets in the last hour and climbing. No one in the EU can complete a purchase right now.
+
+- Marco, Support Lead</code></pre></div><p class='eyebrow outcome-label'>Expected outcome</p><dl class="outcome"><dt>Component</dt><dd>Payments (Critical). "Checkout" must normalize to Payments.</dd><dt>Priority</dt><dd><strong>P1</strong></dd><dt>Why</dt><dd>Always-P1 rule: a Critical component is failing for a whole region and customers cannot pay, with no workaround.</dd><dt>Assigned to</dt><dd><strong>Aisha Okafor</strong> (aisha.okafor@example.com), on-call engineer, because it is P1</dd><dt>Notify</dt><dd><strong>Meera Iyer</strong> (engineering manager) and <strong>Diego Fernandez</strong> (backup engineer)</dd><dt>Team and channel</dt><dd>Payments Engineering, <code>payments-l2</code>, <code>#oncall-payments</code></dd><dt>SLA</dt><dd>First response in 15 minutes, resolution in 4 hours</dd><dt>Action</dt><dd>Create a new ticket. KI-1004 is a different payment issue, so it is not a duplicate.</dd><dt>Likely cause</dt><dd>Release 4.2.3 switched EU VAT to the new tax endpoint behind the <code>eu_tax_v2</code> flag, load-tested at only 60% of peak traffic</dd><dt>Workaround</dt><dd>None for customers. RB-01 says to roll back by setting <code>eu_tax_v2 = false</code>.</dd><dt>Human review</dt><dd><strong>Yes</strong>, because it is P1</dd></dl><h3>Test 4: Cosmetic issue</h3><div class="codewrap"><div class="code-head"><span class="code-label">Paste into the manager</span><button class="copy" data-target="c25" type="button">Copy</button></div><pre id="c25"><code>Small thing: on the Settings page, the "Save changes" button overlaps the "Cancel" button, so you can only see half of the Cancel text. Started after the Settings page got its new look this week. Everything still works, I can save fine. Chrome on a MacBook, production.
+
+- Daniel (Customer Success)</code></pre></div><p class='eyebrow outcome-label'>Expected outcome</p><dl class="outcome"><dt>Component</dt><dd>Settings (Low criticality)</dd><dt>Priority</dt><dd><strong>P4</strong></dd><dt>Why</dt><dd>Cosmetic only, since saving still works. Cosmetic issues are always P4.</dd><dt>Assigned to</dt><dd><strong>Ishaan Gupta</strong> (ishaan.gupta@example.com), primary assignee, because it is P4</dd><dt>Notify</dt><dd>Nobody. P4 goes to the team backlog.</dd><dt>Team and channel</dt><dd>Frontend Core, <code>frontend-l2</code>, <code>#oncall-frontend</code></dd><dt>SLA</dt><dd>First response in 2 business days, fixed in the next release (max 30 days)</dd><dt>Action</dt><dd>Create a new ticket. KI-1022 is a different Settings overlap (the dark mode toggle), so it is not a duplicate.</dd><dt>Likely cause</dt><dd>The Settings page redesign in release 4.2.2</dd><dt>Workaround</dt><dd>None needed</dd><dt>Human review</dt><dd>No</dd></dl><h3>Test 5: Unmapped component (bonus)</h3><div class="codewrap"><div class="code-head"><span class="code-label">Paste into the manager</span><button class="copy" data-target="c26" type="button">Copy</button></div><pre id="c26"><code>The Audit Log page shows blank for all admins in our workspace since yesterday. No error, just an empty table even though we definitely have activity. Production, Edge browser. We have a compliance review on Friday and need these logs.
+
+- Fatima, IT Admin at Northwind Corp</code></pre></div><p class='eyebrow outcome-label'>Expected outcome</p><dl class="outcome"><dt>Component</dt><dd>Audit Log. Not in the table, so lookups a and b fail and the agent falls back to the Service Desk row.</dd><dt>Priority</dt><dd><strong>P3</strong> most likely, but P2 is defensible</dd><dt>Why</dt><dd>A whole team of admins is affected, but criticality is unknown. The agent should say it is unsure between two levels.</dd><dt>Assigned to</dt><dd><strong>Tanvi Shah</strong> (tanvi.shah@example.com), Service Desk primary assignee, if P3. If the agent picks P2, it goes to <strong>Mark Ellis</strong> (on-call) and notifies <strong>Nikhil Bhat</strong>.</dd><dt>Team and channel</dt><dd>Service Desk, <code>servicedesk-l1</code>, <code>#service-desk</code></dd><dt>Action</dt><dd>Create a new ticket</dd><dt>Likely cause</dt><dd>Unknown. Nothing in the known issues or release notes covers Audit Log.</dd><dt>Human review</dt><dd><strong>Yes</strong>, for two reasons: the fallback owner was used, and the report mentions a compliance review</dd><dt>Teaching point</dt><dd>The guardrail catches something the rules did not anticipate.</dd></dl></section><section id="troubleshooting"><p class="eyebrow">10</p><h2>Troubleshooting</h2><p>Most failures we hit in rehearsal came from mismatched names or stale data, not from model reasoning.</p><div class="tablewrap"><table><thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead><tbody><tr><td>Owner is null, "SDM query returned no match"</td><td>Intake output a non-canonical component (e.g. "Checkout")</td><td>Check Agent 1's component synonym list. Agent 3's fuzzy lookup (b) on <code>notes</code> should also catch it.</td></tr><tr><td>Owner shows a role title ("Payments Engineering Manager") instead of a name</td><td>Agent is reading an old <code>component_owners.csv</code> from the KB, or a runbook</td><td>Remove <code>component_owners.csv</code> from the KB. It belongs only in the semantic data model.</td></tr><tr><td>"Ownership row has no names or emails"</td><td>The semantic data model holds the old table, or columns were deselected on upload</td><td>Re-upload the latest CSV and select all 14 columns. Check with "List all column names in component_owners."</td></tr><tr><td>Agent 3 returns names, but the manager drops them</td><td>Old manager summary format</td><td>Use the manager prompt above, which copies <code>assigned_to</code> and <code>notify</code> exactly.</td></tr><tr><td>Likely cause says "unconfirmed" despite an exact duplicate</td><td>Context Agent too cautious</td><td>Use the step 2 wording above: a high-confidence duplicate's documented root cause wins.</td></tr><tr><td>Test 1 passes Intake instead of stopping</td><td>Agent inferred the environment</td><td>Tighten Agent 1: environment must be explicitly stated, not inferred.</td></tr><tr><td>Test 2 comes back P2</td><td>Workaround downgrade skipped</td><td>The downgrade rule is in Agent 3's step 1. Check it wasn't trimmed.</td></tr><tr><td>Output fields keep changing names</td><td>Structured output not enabled</td><td>Turn on structured output with the schema for each agent.</td></tr></tbody></table></div></section>
+<footer>Follow-along guide · IT Bug Triage Co-Build</footer>
+</main>
+</div>
+<script>
+document.querySelectorAll('button.copy').forEach(function(b){
+  b.addEventListener('click',function(){
+    var t=document.getElementById(b.dataset.target).innerText;
+    function ok(){b.textContent='Copied';b.classList.add('done');setTimeout(function(){b.textContent='Copy';b.classList.remove('done')},1600)}
+    if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(ok)}
+    else{var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){}document.body.removeChild(a)}
+  });
+});
+var links=document.querySelectorAll('aside a');
+var obs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){l.classList.toggle('active',l.getAttribute('href')==='#'+e.target.id)})}})},{rootMargin:'-20% 0px -70% 0px'});
+document.querySelectorAll('main section').forEach(function(s){obs.observe(s)});
+</script>
+</body>
+</html>
